@@ -122,10 +122,11 @@ reg [POLY_WIDTH-1:0]c_state[DATA_WIDTH  :0];
 reg [POLY_WIDTH-1:0]r_state[DATA_WIDTH-1:0];
 reg [POLY_WIDTH  :0]t_state[DATA_WIDTH-1:0];
 reg [$clog2(POLY_WIDTH+1)-1:0]deg_p;
+reg [POLY_WIDTH-1:0]r_mask;
 
 integer i, j;
 
-assign state_out = c_state[DATA_WIDTH];
+assign state_out = c_state[DATA_WIDTH] & r_mask;
 
 always @(*) begin
 	deg_p = 'd0;
@@ -133,6 +134,12 @@ always @(*) begin
 		if (poly_in[i] & 1'b1) begin
 			deg_p = i;
 		end	 
+	end
+	for (i = 0; i < POLY_WIDTH; i = i + 1) begin
+		r_mask[i] = 1'b0;
+		if (i < deg_p) begin
+			r_mask[i] = 1'b1;
+		end
 	end
 end
 
@@ -144,10 +151,7 @@ always @(*) begin
 			t_state[i][j] = c_state[i][j-1];
 		end
 		for (j = 0; j < POLY_WIDTH; j = j + 1) begin
-			r_state[i][j] = 1'b0;
-			if (j < deg_p) begin
-				r_state[i][j] = t_state[i][j] ^ (poly_in[j] & (t_state[i][deg_p] ^ data_in[DATA_WIDTH-1-i]));
-			end
+			r_state[i][j] = t_state[i][j] ^ (poly_in[j] & (t_state[i][deg_p] ^ data_in[DATA_WIDTH-1-i]));
 		end
 		c_state[i+1] = r_state[i];
 	end
